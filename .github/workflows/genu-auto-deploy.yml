@@ -2,7 +2,7 @@ name: GenU AutoDeploy
 
 on:
   pull_request:
-    types: [labeled]
+    types: [labeled, closed]
 
 permissions:
   id-token: write
@@ -72,3 +72,37 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+
+  cleanup:
+    if: github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'auto-deploy')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::047385030331:role/TESTGenUAutoDeployRole
+          aws-region: ap-northeast-1
+
+      - name: Delete CloudFormation Stack
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          STACK_NAME_WITH_HYPHEN="GenerativeAiUseCasesStack-pr-${PR_NUMBER}"
+          STACK_NAME_WITHOUT_HYPHEN="GenerativeAiUseCasesStackpr-${PR_NUMBER}"
+
+          echo "Checking for stack ${STACK_NAME_WITH_HYPHEN}..."
+          if aws cloudformation describe-stacks --stack-name ${STACK_NAME_WITH_HYPHEN} --region ap-northeast-1 2>/dev/null; then
+            echo "Deleting stack ${STACK_NAME_WITH_HYPHEN}..."
+            aws cloudformation delete-stack --stack-name ${STACK_NAME_WITH_HYPHEN} --region ap-northeast-1
+            echo "Stack deletion initiated: ${STACK_NAME_WITH_HYPHEN}"
+          else
+            echo "Stack ${STACK_NAME_WITH_HYPHEN} not found, checking ${STACK_NAME_WITHOUT_HYPHEN}..."
+            if aws cloudformation describe-stacks --stack-name ${STACK_NAME_WITHOUT_HYPHEN} --region ap-northeast-1 2>/dev/null; then
+              echo "Deleting stack ${STACK_NAME_WITHOUT_HYPHEN}..."
+              aws cloudformation delete-stack --stack-name ${STACK_NAME_WITHOUT_HYPHEN} --region ap-northeast-1
+              echo "Stack deletion initiated: ${STACK_NAME_WITHOUT_HYPHEN}"
+            else
+              echo "No stack found for PR ${PR_NUMBER}"
+            fi
+          fi
+
+          echo "Cleanup completed for PR ${PR_NUMBER}"
