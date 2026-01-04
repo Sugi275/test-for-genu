@@ -24,6 +24,7 @@ jobs:
         with:
           project-name: TESTGenUAutoDeploy
           disable-source-override: true
+          hide-cloudwatch-logs: true
           env-vars-for-codebuild: |
             PR_NUMBER,
             GITHUB_HEAD_REF,
