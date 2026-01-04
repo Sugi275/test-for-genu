@@ -23,9 +23,11 @@ jobs:
         uses: aws-actions/aws-codebuild-run-build@v1
         with:
           project-name: TESTGenUAutoDeploy
-          source-version-override: ${{ github.head_ref }}
+          disable-source-override: true
           env-vars-for-codebuild: |
-            PR_NUMBER
+            PR_NUMBER,
+            GITHUB_HEAD_REF,
+            GITHUB_REPOSITORY
           buildspec-override: |
             version: 0.2
             phases:
@@ -33,6 +35,9 @@ jobs:
                 runtime-versions:
                   nodejs: 20
                 commands:
+                  - echo "Cloning repository..."
+                  - git clone --branch ${GITHUB_HEAD_REF} https://github.com/${GITHUB_REPOSITORY}.git /tmp/source
+                  - cd /tmp/source
                   - echo "Node.js version:"
                   - node --version
                   - npm --version
@@ -52,3 +57,5 @@ jobs:
                   - echo "Deployment completed successfully for environment pr-${PR_NUMBER}"
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
