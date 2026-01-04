@@ -97,24 +97,13 @@ jobs:
               build:
                 commands:
                   - echo "Cleanup started for PR ${PR_NUMBER}"
-                  - STACK_NAME_WITH_HYPHEN="GenerativeAiUseCasesStack-pr-${PR_NUMBER}"
-                  - STACK_NAME_WITHOUT_HYPHEN="GenerativeAiUseCasesStackpr-${PR_NUMBER}"
-                  - echo "Checking for stack with hyphen..."
-                  - |
-                    if aws cloudformation describe-stacks --stack-name ${STACK_NAME_WITH_HYPHEN} --region ap-northeast-1 2>/dev/null; then
-                      echo "Deleting stack ${STACK_NAME_WITH_HYPHEN}..."
-                      aws cloudformation delete-stack --stack-name ${STACK_NAME_WITH_HYPHEN} --region ap-northeast-1
-                      echo "Stack deletion initiated"
-                    else
-                      echo "Stack with hyphen not found, checking without hyphen..."
-                      if aws cloudformation describe-stacks --stack-name ${STACK_NAME_WITHOUT_HYPHEN} --region ap-northeast-1 2>/dev/null; then
-                        echo "Deleting stack ${STACK_NAME_WITHOUT_HYPHEN}..."
-                        aws cloudformation delete-stack --stack-name ${STACK_NAME_WITHOUT_HYPHEN} --region ap-northeast-1
-                        echo "Stack deletion initiated"
-                      else
-                        echo "No stack found for this PR"
-                      fi
-                    fi
-                  - echo "Cleanup completed"
+                  - STACK_NAME="GenerativeAiUseCasesStack-pr-${PR_NUMBER}"
+                  - echo "Checking for stack ${STACK_NAME}..."
+                  - if ! aws cloudformation describe-stacks --stack-name ${STACK_NAME} --region ap-northeast-1 2>/dev/null; then echo "Stack not found for this PR" && exit 0; fi
+                  - echo "Deleting stack ${STACK_NAME}..."
+                  - aws cloudformation delete-stack --stack-name ${STACK_NAME} --region ap-northeast-1
+                  - echo "Waiting for stack deletion to complete..."
+                  - aws cloudformation wait stack-delete-complete --stack-name ${STACK_NAME} --region ap-northeast-1
+                  - echo "Stack deletion completed successfully"
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
