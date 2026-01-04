@@ -56,6 +56,29 @@ jobs:
               post_build:
                 commands:
                   - echo "Deployment completed successfully for environment pr-${PR_NUMBER}"
+                  - echo "Getting CloudFront URL..."
+                  - GENU_URL=$(aws cloudformation describe-stacks --stack-name GenerativeAiUseCasesStack-pr-${PR_NUMBER} --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontURL`].OutputValue' --output text --region ap-northeast-1 || echo "N/A")
+                  - echo "CloudFront URL: ${GENU_URL}"
+                  - PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
+                  - DEPLOY_TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S JST')
+                  - DEPLOY_STATUS="✅ 成功"
+                  - |
+                    cat > /tmp/lambda-payload.json <<EOF
+                    {
+                      "ENV_NAME": "pr-${PR_NUMBER}",
+                      "PR_NUMBER": "${PR_NUMBER}",
+                      "BRANCH_NAME": "${GITHUB_HEAD_REF}",
+                      "GENU_URL": "${GENU_URL}",
+                      "PR_URL": "${PR_URL}",
+                      "DEPLOY_STATUS": "${DEPLOY_STATUS}",
+                      "DEPLOY_TIMESTAMP": "${DEPLOY_TIMESTAMP}"
+                    }
+                    EOF
+                  - cat /tmp/lambda-payload.json
+                  - echo "Sending Slack notification..."
+                  - aws lambda invoke --function-name GenUSlackNotification --region ap-northeast-1 --cli-binary-format raw-in-base64-out --payload file:///tmp/lambda-payload.json /tmp/lambda-response.json
+                  - cat /tmp/lambda-response.json
+                  - echo "Slack notification sent successfully"
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
