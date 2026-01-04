@@ -50,8 +50,8 @@ jobs:
                 commands:
                   - echo "Running CDK Bootstrap..."
                   - npx -w packages/cdk cdk bootstrap
-                  - echo "Deploying environment pr-${PR_NUMBER}..."
-                  - ENV_NAME="pr-${PR_NUMBER}"
+                  - echo "Deploying environment -pr-${PR_NUMBER}..."
+                  - ENV_NAME="-pr-${PR_NUMBER}"
                   - npm -w packages/cdk run -- cdk deploy --require-approval never --all -c env=${ENV_NAME}
               post_build:
                 commands:
