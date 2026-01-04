@@ -62,18 +62,7 @@ jobs:
                   - PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
                   - DEPLOY_TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S JST')
                   - DEPLOY_STATUS="✅ 成功"
-                  - |
-                    cat > /tmp/lambda-payload.json <<EOF
-                    {
-                      "ENV_NAME": "pr-${PR_NUMBER}",
-                      "PR_NUMBER": "${PR_NUMBER}",
-                      "BRANCH_NAME": "${GITHUB_HEAD_REF}",
-                      "GENU_URL": "${GENU_URL}",
-                      "PR_URL": "${PR_URL}",
-                      "DEPLOY_STATUS": "${DEPLOY_STATUS}",
-                      "DEPLOY_TIMESTAMP": "${DEPLOY_TIMESTAMP}"
-                    }
-                    EOF
+                  - echo "{\"ENV_NAME\":\"pr-${PR_NUMBER}\",\"PR_NUMBER\":\"${PR_NUMBER}\",\"BRANCH_NAME\":\"${GITHUB_HEAD_REF}\",\"GENU_URL\":\"${GENU_URL}\",\"PR_URL\":\"${PR_URL}\",\"DEPLOY_STATUS\":\"${DEPLOY_STATUS}\",\"DEPLOY_TIMESTAMP\":\"${DEPLOY_TIMESTAMP}\"}" > /tmp/lambda-payload.json
                   - cat /tmp/lambda-payload.json
                   - echo "Sending Slack notification..."
                   - aws lambda invoke --function-name GenUSlackNotification --region ap-northeast-1 --cli-binary-format raw-in-base64-out --payload file:///tmp/lambda-payload.json /tmp/lambda-response.json
